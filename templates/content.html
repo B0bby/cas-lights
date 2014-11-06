@@ -1,0 +1,48 @@
+{% extends "main.html" %}
+
+{% block title %}Color Select{% endblock %}
+
+{% block head %}
+  {{ super() }}
+  <style type="text/css">
+    .important { color: #336699; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+	<div class="col-sm-12 screen">
+		<input lightID='0' type='text' class="basic"/>
+		<em></em>
+		<input lightID='1' type='text' class="basic"/>
+		<em></em>
+		<input lightID='2' type='text' class="basic"/>
+		<em></em>				
+	</div>
+</div>
+{% endblock %}
+
+{% block footer %}
+<script type="text/javascript">
+	$(document).ready(function(){
+		$(".basic").spectrum({
+			clickoutFiresChange: true,
+			change: function(color) {
+				rgb = hexToRgb(color.toHexString());
+				$.ajax({
+				  type: "GET",
+				  url: "http://alarmpi:5000/light/color/" + $(this).attr("lightID") +  "/" + rgb.r + "/" + rgb.g + "/" + rgb.b
+				})
+			}
+		});
+	})
+	function hexToRgb(hex) {
+	    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+	    return result ? {
+	        r: Math.floor(parseInt(result[1], 16) * 100 / 255),
+	        g: Math.floor(parseInt(result[2], 16) * 100 / 255),
+	        b: Math.floor(parseInt(result[3], 16) * 100 / 255)
+	    } : null;
+	}
+</script>
+{% endblock %}

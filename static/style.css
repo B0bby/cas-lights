@@ -1,0 +1,22 @@
+html, body {
+	height: 100%;
+	margin: 0;
+	padding: 0;
+}
+
+.container-fluid, .row {
+	height: 100%;
+}
+.buttons {
+	height: 100%;
+	background-color: #42847D;
+	border-right: 2px #6A9E98;
+	box-shadow: 2px 0px 10px 0px rgb(52, 52, 52);
+	z-index: 1;
+}
+
+.screen{
+	background-image: url('/static/test-img.jpg');
+	background-size: 100% 100%;
+	height: 100%;
+}
