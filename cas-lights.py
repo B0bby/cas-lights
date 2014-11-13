@@ -2,6 +2,7 @@ from flask import Flask
 from flask import render_template
 import time
 import RPi.GPIO as GPIO
+import json
 
 # Global crossfading variables
 black     = ( 0, 0, 0 )
@@ -36,12 +37,16 @@ class Lights:
         GPIO.setup(self.redPin, GPIO.OUT)
         GPIO.setup(self.grnPin, GPIO.OUT)
         GPIO.setup(self.bluPin, GPIO.OUT)
-        self.redPin = GPIO.PWM( self.redPin, 50 )
-        self.grnPin = GPIO.PWM( self.grnPin, 50 )
-        self.bluPin = GPIO.PWM( self.bluPin, 50 )
+        self.redPin = GPIO.PWM( self.redPin, 120 )
+        self.grnPin = GPIO.PWM( self.grnPin, 120 )
+        self.bluPin = GPIO.PWM( self.bluPin, 120 )
         self.redPin.start(0)
         self.grnPin.start(0)
-        self.bluPin.start(0)        
+        self.bluPin.start(0)
+
+        self.redVal = 0
+        self.grnVal = 0
+        self.bluVal = 0
 
 lights = [ Lights(3,5,7), Lights(11,13,15), Lights(19,21,23) ]
 
@@ -80,42 +85,65 @@ def crossFade( lightID, color ):
 
     for i in range( 0, 1020 ):
 
-        redVal = calculateVal( stepR, redVal, i )
-        grnVal = calculateVal( stepG, grnVal, i )
-        bluVal = calculateVal( stepB, bluVal, i )
+        l = lights[lightID]
 
-        if ( prevR != redVal ):
-            lights[lightID].redPin.ChangeDutyCycle( redVal )
-        if ( prevG != grnVal ):
-            lights[lightID].grnPin.ChangeDutyCycle( grnVal )
-        if ( prevB != bluVal ):
-            lights[lightID].bluPin.ChangeDutyCycle( bluVal )
+        l.redVal = calculateVal( stepR, l.redVal, i )
+        l.grnVal = calculateVal( stepG, l.grnVal, i )
+        l.bluVal = calculateVal( stepB, l.bluVal, i )
+
+        if ( prevR != l.redVal ):
+            lights[lightID].redPin.ChangeDutyCycle( l.redVal )
+        if ( prevG != l.grnVal ):
+            lights[lightID].grnPin.ChangeDutyCycle( l.grnVal )
+        if ( prevB != l.bluVal ):
+            lights[lightID].bluPin.ChangeDutyCycle( l.bluVal )
 
         time.sleep( wait )
 
         if ( DEBUG ):
             print( "Loop/RGB: #" )
-            print( redVal, grnVal, bluVal )
+            print( l.redVal, l.grnVal, l.bluVal )
             print( i )
             print()
 
 
-    prevR = redVal
-    prevG = grnVal
-    prevB = bluVal
+    prevR = l.redVal
+    prevG = l.grnVal
+    prevB = l.bluVal
+
     time.sleep( hold )
+
+def rgb_to_hex(rgb):
+    return '#%02x%02x%02x' % rgb
 
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return render_template('content.html')
+    lights_page = []
+    for light in lights:
+        try:
+            color = rgb_to_hex((light.redVal * 255 / 100, light.grnVal * 255 / 100, light.bluVal * 255 / 100))
+            lights_page.append(color)
+        except Exception as e:
+            print (e)
+    return render_template('content.html', lights=lights_page)
 
 @app.route('/light/color/<id>/<red>/<green>/<blue>')
 def changeColor(id=0, red=0, green=0, blue=0):
     lightID = int(id)
     color = [int(red), int(green), int(blue)]
     crossFade(lightID, color)
+
+@app.route('/light/status/<id>')
+def lightStatus(id=0):
+    lightID = int(id)
+    l = lights[lightID]
+
+    try:
+        return json.dumps({'id' : lightID, 'red' : l.redVal, 'blue' : l.bluVal, 'green' : l.grnVal}, separators=(',',':'))
+    except Exception as e:
+        return e
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')

@@ -10,14 +10,41 @@
 {% endblock %}
 
 {% block content %}
-<div class="row">
-	<div class="col-sm-12 screen">
-		<input lightID='0' type='text' class="basic"/>
-		<em></em>
-		<input lightID='1' type='text' class="basic"/>
-		<em></em>
-		<input lightID='2' type='text' class="basic"/>
-		<em></em>				
+<div class="row title">
+	<div class="col-sm-4 col-md-4 title-left">CAS-LIGHTS</div>
+	<div class="col-sm-8 col-md-8 title-right"></div>
+</div>
+<div class="row item">
+	<div class="col-sm-2 col-xs-2 name">West Wall</div>
+	<div class="col-xs-9">
+		<button type="button" class="btn btn-default">On</button>
+		<button type="button" class="btn btn-default disabled">Off</button>
+	</div>
+	<div class="col-xs-1">
+		<input lightID='0' type='text' class="basic" value="{{ lights[0] }}"/>
+		<em></em>			
+	</div>
+</div>
+<div class="row item">
+	<div class="col-sm-2 col-xs-2 name">South Wall</div>
+	<div class="col-xs-9">
+		<button type="button" class="btn btn-default">On</button>
+		<button type="button" class="btn btn-default disabled">Off</button>
+	</div>
+	<div class="col-xs-1">
+		<input lightID='1' type='text' class="basic" value="{{ lights[1] }}"/>
+		<em></em>			
+	</div>
+</div>
+<div class="row item">
+	<div class="col-sm-2 col-xs-2 name">Island</div>
+	<div class="col-xs-9">
+		<button type="button" class="btn btn-default">On</button>
+		<button type="button" class="btn btn-default disabled">Off</button>
+	</div>
+	<div class="col-xs-1">
+		<input lightID='2' type='text' class="basic" value="{{ lights[2] }}"/>
+		<em></em>			
 	</div>
 </div>
 {% endblock %}
@@ -25,17 +52,47 @@
 {% block footer %}
 <script type="text/javascript">
 	$(document).ready(function(){
+
 		$(".basic").spectrum({
 			clickoutFiresChange: true,
 			change: function(color) {
 				rgb = hexToRgb(color.toHexString());
 				$.ajax({
 				  type: "GET",
-				  url: "http://alarmpi:5000/light/color/" + $(this).attr("lightID") +  "/" + rgb.r + "/" + rgb.g + "/" + rgb.b
+				  url: "/light/color/" + $(this).attr("lightID") +  "/" + rgb.r + "/" + rgb.g + "/" + rgb.b
 				})
 			}
 		});
+
+		//updatePicker();
 	})
+
+	function updatePicker(){	
+		$(".basic").each(function(){
+			var id = $(this).attr("lightID");
+		    $.ajax({
+		        type: "GET",
+		        url: "/light/status/" + id,
+		        contentType: "application/json; charset=utf-8",
+		    }).done(function( json ) {
+		    	lights = JSON.parse(json);
+		    	console.log(lights.red, lights.green, lights.blue);
+		    	var hex = rgbToHex(lights.red, lights.green, lights.blue);
+				$(this).spectrum({
+					color: hex,
+					clickoutFiresChange: true,
+					change: function(color) {
+						rgb = hexToRgb(color.toHexString());
+						$.ajax({
+						  type: "GET",
+						  url: "/light/color/" + $(this).attr("lightID") +  "/" + rgb.r + "/" + rgb.g + "/" + rgb.b
+						})
+					}
+				});
+		    })
+		})
+	}
+
 	function hexToRgb(hex) {
 	    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
 	    return result ? {
@@ -43,6 +100,25 @@
 	        g: Math.floor(parseInt(result[2], 16) * 100 / 255),
 	        b: Math.floor(parseInt(result[3], 16) * 100 / 255)
 	    } : null;
+	}
+
+	function rgbToHex(r, g, b) {
+	    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+	}
+
+	function componentToHex(c) {
+	    var hex = c.toString(16);
+	    return hex.length == 1 ? "0" + hex : hex;
+	}
+
+	function hoverAnimation(){
+		$(".row.item").hover(
+			function() {
+				$( this ).css("background-color", "#006D65");
+			}, function() {
+				$( this ).css("background-color", "#00887E");
+			}
+		);
 	}
 </script>
 {% endblock %}
